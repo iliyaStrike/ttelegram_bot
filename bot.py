@@ -12,6 +12,7 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 waiting = {}
+pending_files = {}
 
 
 # ======================
@@ -55,10 +56,13 @@ async def start(message: Message):
             return
 
         if await check_user(message.from_user.id):
-            await message.answer_document(file[0], caption=f"📁 {file[1]}")
-        else:
-            await message.answer("❌ اول عضو کانال‌ها شو", reply_markup=join_kb)
-        return
+            else:
+    pending_files[message.from_user.id] = code
+
+    await message.answer(
+        "❌ ابتدا عضو کانال‌ها شوید سپس روی «بررسی عضویت» بزنید.",
+        reply_markup=join_kb
+    )
 
     await message.answer("👋 خوش آمدی", reply_markup=join_kb)
 
