@@ -11,12 +11,12 @@ from database import add_file, get_file
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-waiting_admin = {}
+waiting = {}
 
 
-# ======================
+# =====================
 # CHECK JOIN
-# ======================
+# =====================
 async def check_user(user_id: int):
     for ch in [CHANNEL_1, CHANNEL_2]:
         member = await bot.get_chat_member(ch, user_id)
@@ -25,21 +25,21 @@ async def check_user(user_id: int):
     return True
 
 
-# ======================
+# =====================
 # KEYBOARD
-# ======================
+# =====================
 join_kb = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="📢 عضویت کانال‌ها", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
-        [InlineKeyboardButton(text="📢 کانال دوم", url=f"https://t.me/{CHANNEL_2.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 کانال 1", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 کانال 2", url=f"https://t.me/{CHANNEL_2.replace('@','')}")],
         [InlineKeyboardButton(text="✅ بررسی عضویت", callback_data="check")]
     ]
 )
 
 
-# ======================
+# =====================
 # START
-# ======================
+# =====================
 @dp.message(CommandStart())
 async def start(message: Message):
 
@@ -62,9 +62,9 @@ async def start(message: Message):
     await message.answer("👋 خوش آمدی", reply_markup=join_kb)
 
 
-# ======================
+# =====================
 # CHECK BUTTON
-# ======================
+# =====================
 @dp.callback_query(F.data == "check")
 async def check(callback: CallbackQuery):
 
@@ -74,43 +74,48 @@ async def check(callback: CallbackQuery):
         await callback.answer("❌ هنوز عضو نیستی", show_alert=True)
 
 
-# ======================
+# =====================
 # ADMIN ADD FILE
-# ======================
+# =====================
 @dp.message(Command("add"))
-async def add_file_cmd(message: Message):
+async def add(message: Message):
 
-    if message.from_user.id != ADMIN_ID:
+    if str(message.from_user.id) != str(ADMIN_ID):
         return
 
-    waiting_admin[message.from_user.id] = True
-    await message.answer("📁 فایل بفرست (document)")
+    waiting[message.from_user.id] = True
+    await message.answer("📁 فایل بفرست")
 
 
+# =====================
+# SAVE FILE
+# =====================
 @dp.message(F.document)
-async def save_file(message: Message):
+async def save(message: Message):
 
-    if message.from_user.id != ADMIN_ID:
+    if str(message.from_user.id) != str(ADMIN_ID):
         return
 
-    if not waiting_admin.get(message.from_user.id):
+    if not waiting.get(message.from_user.id):
         return
 
     file_id = message.document.file_id
+    name = message.document.file_name
+
     code = str(random.randint(1000, 9999))
 
-    add_file(code, file_id)
+    add_file(code, file_id, name)
 
-    waiting_admin[message.from_user.id] = False
+    waiting[message.from_user.id] = False
 
     await message.answer(
         f"✅ ذخیره شد\n\n🔗 لینک:\nhttps://t.me/YOUR_BOT?start={code}"
     )
 
 
-# ======================
+# =====================
 # RUN
-# ======================
+# =====================
 async def main():
     await dp.start_polling(bot)
 
