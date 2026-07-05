@@ -12,7 +12,6 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 waiting = {}
-pending_files = {}
 
 
 # ======================
@@ -31,8 +30,8 @@ async def check_user(user_id: int):
 # ======================
 join_kb = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="📢 کانال 1", url=CHANNEL_1_LINK)],
-        [InlineKeyboardButton(text="📢 کانال 2", url=CHANNEL_2_LINK)],
+        [InlineKeyboardButton(text="📢 کانال 1", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 کانال 2", url=f"https://t.me/{CHANNEL_2.replace('@','')}")],
         [InlineKeyboardButton(text="✅ بررسی عضویت", callback_data="check")]
     ]
 )
@@ -44,7 +43,7 @@ join_kb = InlineKeyboardMarkup(
 @dp.message(CommandStart())
 async def start(message: Message):
 
-    args = message.text.split(maxsplit=1)
+    args = message.text.split()
 
     if len(args) > 1:
         code = args[1]
@@ -56,58 +55,26 @@ async def start(message: Message):
             return
 
         if await check_user(message.from_user.id):
-            await message.answer_document(
-                document=file[0],
-                caption=f"📁 {file[1]}"
-            )
+            await message.answer_document(file[0], caption=f"📁 {file[1]}")
         else:
-            pending_files[message.from_user.id] = code
             await message.answer("❌ اول عضو کانال‌ها شو", reply_markup=join_kb)
-
         return
 
     await message.answer("👋 خوش آمدی", reply_markup=join_kb)
+
+
 # ======================
 # CHECK BUTTON
 # ======================
 @dp.callback_query(F.data == "check")
 async def check(callback: CallbackQuery):
 
-    user_id = callback.from_user.id
+    if await check_user(callback.from_user.id):
+        await callback.message.edit_text("✅ تایید شد")
+    else:
+        await callback.answer("❌ هنوز عضو نیستی", show_alert=True)
 
-    if not await check_user(user_id):
-        await callback.answer(
-            "❌ هنوز عضو همه کانال‌ها نیستید.",
-            show_alert=True
-        )
-        return
 
-    if user_id not in pending_files:
-        await callback.answer(
-            "✅ عضویت تایید شد.",
-            show_alert=True
-        )
-        return
-
-    code = pending_files[user_id]
-
-    file = get_file(code)
-
-    if not file:
-        await callback.answer(
-            "❌ فایل پیدا نشد.",
-            show_alert=True
-        )
-        return
-
-    await callback.message.answer_document(
-        document=file[0],
-        caption=f"📁 {file[1]}"
-    )
-
-    del pending_files[user_id]
-
-    await callback.answer("✅ فایل ارسال شد.")
 # ======================
 # ADMIN - ADD FILE
 # ======================
@@ -155,7 +122,6 @@ async def save(message: Message):
 # ======================
 async def main():
     await dp.start_polling(bot)
-
 
 
 if __name__ == "__main__":
