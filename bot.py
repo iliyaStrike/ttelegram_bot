@@ -70,10 +70,14 @@ async def start(message: Message):
 async def check(callback: CallbackQuery):
 
     if await check_user(callback.from_user.id):
-        await callback.message.edit_text("✅ تایید شد")
-    else:
-        await callback.answer("❌ هنوز عضو نیستی", show_alert=True)
 
+        await callback.answer("✅ تایید شد", show_alert=True)
+
+        await callback.message.edit_text("✅ عضویت شما تایید شد")
+
+    else:
+
+        await callback.answer("❌ هنوز عضو نیستی", show_alert=True)
 
 # ======================
 # ADMIN - ADD FILE
