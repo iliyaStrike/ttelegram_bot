@@ -21,15 +21,5 @@ def add_file(code, file_id, name):
 
 
 def get_file(code):
-    cursor.execute("SELECT file_id FROM files WHERE code=?", (code,))
+    cursor.execute("SELECT file_id, name FROM files WHERE code=?", (code,))
     return cursor.fetchone()
-
-
-def get_all():
-    cursor.execute("SELECT code, name FROM files")
-    return cursor.fetchall()
-
-
-def delete_file(code):
-    cursor.execute("DELETE FROM files WHERE code=?", (code,))
-    conn.commit()
