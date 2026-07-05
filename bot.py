@@ -14,7 +14,8 @@ dp = Dispatcher()
 # ======================
 join_kb = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="📢 عضویت در کانال‌ها", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 عضویت کانال 1", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 عضویت کانال 2", url=f"https://t.me/{CHANNEL_2.replace('@','')}")],
         [InlineKeyboardButton(text="✅ بررسی عضویت", callback_data="check")]
     ]
 )
