@@ -44,7 +44,7 @@ join_kb = InlineKeyboardMarkup(
 @dp.message(CommandStart())
 async def start(message: Message):
 
-    args = message.text.split()
+    args = message.text.split(maxsplit=1)
 
     if len(args) > 1:
         code = args[1]
@@ -56,14 +56,17 @@ async def start(message: Message):
             return
 
         if await check_user(message.from_user.id):
-            await message.answer_document(file[0], caption=f"📁 {file[1]}")
+            await message.answer_document(
+                document=file[0],
+                caption=f"📁 {file[1]}"
+            )
         else:
+            pending_files[message.from_user.id] = code
             await message.answer("❌ اول عضو کانال‌ها شو", reply_markup=join_kb)
+
         return
 
     await message.answer("👋 خوش آمدی", reply_markup=join_kb)
-
-
 # ======================
 # CHECK BUTTON
 # ======================
