@@ -5,18 +5,19 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
-from config import BOT_TOKEN, CHANNEL_1, CHANNEL_2, ADMIN_ID
-from database import add_file, get_file, get_all, delete_file
+from config import BOT_TOKEN, CHANNEL_1, CHANNEL_2, ADMIN_ID, BOT_USERNAME
+from database import add_file, get_file
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 waiting = {}
 
+
 # ======================
 # CHECK JOIN
 # ======================
-async def check_user(user_id):
+async def check_user(user_id: int):
     for ch in [CHANNEL_1, CHANNEL_2]:
         member = await bot.get_chat_member(ch, user_id)
         if member.status not in ["member", "administrator", "creator"]:
@@ -25,30 +26,16 @@ async def check_user(user_id):
 
 
 # ======================
-# KEYBOARD JOIN
+# KEYBOARD
 # ======================
 join_kb = InlineKeyboardMarkup(
     inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="📢 کانال 1",
-                url=f"https://t.me/{CHANNEL_1.replace('@','')}"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="📢 کانال 2",
-                url=f"https://t.me/{CHANNEL_2.replace('@','')}"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="✅ بررسی",
-                callback_data="check"
-            )
-        ]
+        [InlineKeyboardButton(text="📢 کانال 1", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 کانال 2", url=f"https://t.me/{CHANNEL_2.replace('@','')}")],
+        [InlineKeyboardButton(text="✅ بررسی عضویت", callback_data="check")]
     ]
 )
+
 
 # ======================
 # START
@@ -60,6 +47,7 @@ async def start(message: Message):
 
     if len(args) > 1:
         code = args[1]
+
         file = get_file(code)
 
         if not file:
@@ -67,9 +55,9 @@ async def start(message: Message):
             return
 
         if await check_user(message.from_user.id):
-            await message.answer_document(file[0], caption=f"📁 {file[2]}")
+            await message.answer_document(file[0], caption=f"📁 {file[1]}")
         else:
-            await message.answer("❌ اول عضو شو", reply_markup=join_kb)
+            await message.answer("❌ اول عضو کانال‌ها شو", reply_markup=join_kb)
         return
 
     await message.answer("👋 خوش آمدی", reply_markup=join_kb)
@@ -88,9 +76,8 @@ async def check(callback: CallbackQuery):
 
 
 # ======================
-# ADMIN PANEL
+# ADMIN - ADD FILE
 # ======================
-
 @dp.message(Command("add"))
 async def add(message: Message):
 
@@ -102,7 +89,7 @@ async def add(message: Message):
 
 
 # ======================
-# SAVE FILE
+# SAVE FILE + LINK
 # ======================
 @dp.message(F.document)
 async def save(message: Message):
@@ -116,58 +103,22 @@ async def save(message: Message):
     file_id = message.document.file_id
     name = message.document.file_name
 
-    code = str(random.randint(1000, 9999))
+    # 🔥 لینک حرفه‌ای
+    code = f"file_{random.randint(1000, 9999)}"
 
     add_file(code, file_id, name)
 
     waiting[message.from_user.id] = False
 
-    await message.answer(f"✅ ذخیره شد\n🔗 /start {code}")
+    link = f"https://t.me/{BOT_USERNAME}?start={code}"
+
+    await message.answer(
+        f"✅ فایل ذخیره شد\n\n🔗 لینک دانلود:\n{link}"
+    )
 
 
 # ======================
-# LIST FILES
-# ======================
-@dp.message(Command("list"))
-async def list_files(message: Message):
-
-    if str(message.from_user.id) != str(ADMIN_ID):
-        return
-
-    files = get_all()
-
-    if not files:
-        await message.answer("❌ فایلی نیست")
-        return
-
-    text = "📂 لیست فایل‌ها:\n\n"
-    for code, name in files:
-        text += f"🔹 {name} → /start {code}\n"
-
-    await message.answer(text)
-
-
-# ======================
-# DELETE FILE
-# ======================
-@dp.message(Command("del"))
-async def delete(message: Message):
-
-    if str(message.from_user.id) != str(ADMIN_ID):
-        return
-
-    args = message.text.split()
-
-    if len(args) < 2:
-        await message.answer("❌ مثال: /del 1234")
-        return
-
-    delete_file(args[1])
-    await message.answer("🗑 حذف شد")
-
-
-# ======================
-# RUN
+# RUN BOT
 # ======================
 async def main():
     await dp.start_polling(bot)
