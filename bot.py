@@ -1,12 +1,28 @@
 import asyncio
+import random
+
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
-from config import BOT_TOKEN, CHANNEL_1, CHANNEL_2, FILE_ID
+from config import BOT_TOKEN, CHANNEL_1, CHANNEL_2, ADMIN_ID
+from database import add_file, get_file
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+
+waiting_admin = {}
+
+
+# ======================
+# CHECK JOIN
+# ======================
+async def check_user(user_id: int):
+    for ch in [CHANNEL_1, CHANNEL_2]:
+        member = await bot.get_chat_member(ch, user_id)
+        if member.status not in ["member", "administrator", "creator"]:
+            return False
+    return True
 
 
 # ======================
@@ -14,43 +30,36 @@ dp = Dispatcher()
 # ======================
 join_kb = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="📢 عضویت کانال 1", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
-        [InlineKeyboardButton(text="📢 عضویت کانال 2", url=f"https://t.me/{CHANNEL_2.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 عضویت کانال‌ها", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 کانال دوم", url=f"https://t.me/{CHANNEL_2.replace('@','')}")],
         [InlineKeyboardButton(text="✅ بررسی عضویت", callback_data="check")]
     ]
 )
 
 
 # ======================
-# CHECK JOIN FUNCTION
-# ======================
-async def check_user(user_id: int):
-    channels = [CHANNEL_1, CHANNEL_2]
-
-    for channel in channels:
-        print("CHECKING:", channel)
-
-        member = await bot.get_chat_member(chat_id=channel, user_id=user_id)
-
-        print("STATUS:", channel, member.status)
-
-        if member.status not in ["member", "administrator", "creator"]:
-            return False
-
-    return True
-
-
-# ======================
-# START COMMAND
+# START
 # ======================
 @dp.message(CommandStart())
 async def start(message: Message):
 
-    if await check_user(message.from_user.id):
-        await message.answer("✅ شما عضو هستید")
-        await message.answer_document(FILE_ID, caption="📁 فایل شما آماده است")
-    else:
-        await message.answer("❌ ابتدا عضو کانال‌ها شوید", reply_markup=join_kb)
+    args = message.text.split()
+
+    if len(args) > 1:
+        code = args[1]
+        file_id = get_file(code)
+
+        if not file_id:
+            await message.answer("❌ فایل پیدا نشد")
+            return
+
+        if await check_user(message.from_user.id):
+            await message.answer_document(file_id, caption="📁 فایل شما")
+        else:
+            await message.answer("❌ اول عضو شو", reply_markup=join_kb)
+        return
+
+    await message.answer("👋 خوش آمدی", reply_markup=join_kb)
 
 
 # ======================
@@ -60,10 +69,43 @@ async def start(message: Message):
 async def check(callback: CallbackQuery):
 
     if await check_user(callback.from_user.id):
-        await callback.message.edit_text("✅ عضویت تایید شد")
-        await callback.message.answer_document(FILE_ID, caption="📁 فایل شما آماده است")
+        await callback.message.edit_text("✅ تایید شد")
     else:
-        await callback.answer("❌ هنوز عضو کانال نیستید", show_alert=True)
+        await callback.answer("❌ هنوز عضو نیستی", show_alert=True)
+
+
+# ======================
+# ADMIN ADD FILE
+# ======================
+@dp.message(Command("add"))
+async def add_file_cmd(message: Message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    waiting_admin[message.from_user.id] = True
+    await message.answer("📁 فایل بفرست (document)")
+
+
+@dp.message(F.document)
+async def save_file(message: Message):
+
+    if message.from_user.id != ADMIN_ID:
+        return
+
+    if not waiting_admin.get(message.from_user.id):
+        return
+
+    file_id = message.document.file_id
+    code = str(random.randint(1000, 9999))
+
+    add_file(code, file_id)
+
+    waiting_admin[message.from_user.id] = False
+
+    await message.answer(
+        f"✅ ذخیره شد\n\n🔗 لینک:\nhttps://t.me/YOUR_BOT?start={code}"
+    )
 
 
 # ======================
