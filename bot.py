@@ -31,8 +31,8 @@ async def check_user(user_id: int):
 # ======================
 join_kb = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="📢 کانال 1", url=f"https://t.me/{CHANNEL_1.replace('@','')}")],
-        [InlineKeyboardButton(text="📢 کانال 2", url=f"https://t.me/{CHANNEL_2.replace('@','')}")],
+        [InlineKeyboardButton(text="📢 کانال 1", url=CHANNEL_1_LINK)],
+        [InlineKeyboardButton(text="📢 کانال 2", url=CHANNEL_2_LINK)],
         [InlineKeyboardButton(text="✅ بررسی عضویت", callback_data="check")]
     ]
 )
