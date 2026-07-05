@@ -56,13 +56,10 @@ async def start(message: Message):
             return
 
         if await check_user(message.from_user.id):
-            else:
-    pending_files[message.from_user.id] = code
-
-    await message.answer(
-        "❌ ابتدا عضو کانال‌ها شوید سپس روی «بررسی عضویت» بزنید.",
-        reply_markup=join_kb
-    )
+            await message.answer_document(file[0], caption=f"📁 {file[1]}")
+        else:
+            await message.answer("❌ اول عضو کانال‌ها شو", reply_markup=join_kb)
+        return
 
     await message.answer("👋 خوش آمدی", reply_markup=join_kb)
 
@@ -73,12 +70,41 @@ async def start(message: Message):
 @dp.callback_query(F.data == "check")
 async def check(callback: CallbackQuery):
 
-    if await check_user(callback.from_user.id):
-        await callback.message.edit_text("✅ تایید شد")
-    else:
-        await callback.answer("❌ هنوز عضو نیستی", show_alert=True)
+    user_id = callback.from_user.id
 
+    if not await check_user(user_id):
+        await callback.answer(
+            "❌ هنوز عضو همه کانال‌ها نیستید.",
+            show_alert=True
+        )
+        return
 
+    if user_id not in pending_files:
+        await callback.answer(
+            "✅ عضویت تایید شد.",
+            show_alert=True
+        )
+        return
+
+    code = pending_files[user_id]
+
+    file = get_file(code)
+
+    if not file:
+        await callback.answer(
+            "❌ فایل پیدا نشد.",
+            show_alert=True
+        )
+        return
+
+    await callback.message.answer_document(
+        document=file[0],
+        caption=f"📁 {file[1]}"
+    )
+
+    del pending_files[user_id]
+
+    await callback.answer("✅ فایل ارسال شد.")
 # ======================
 # ADMIN - ADD FILE
 # ======================
