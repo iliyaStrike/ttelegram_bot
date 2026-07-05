@@ -109,7 +109,7 @@ async def save(message: Message):
     waiting[message.from_user.id] = False
 
     await message.answer(
-        f"✅ ذخیره شد\n\n🔗 لینک:\nhttps://t.me/YOUR_BOT?start={code}"
+        f"✅ ذخیره شد\n\n🔗 لینک:\nhttps://t.me/@dylan_channel_bot?start={code}"
     )
 
 
