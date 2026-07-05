@@ -24,10 +24,18 @@ join_kb = InlineKeyboardMarkup(
 # CHECK JOIN FUNCTION
 # ======================
 async def check_user(user_id: int):
-    for channel in [CHANNEL_1, CHANNEL_2]:
+    channels = [CHANNEL_1, CHANNEL_2]
+
+    for channel in channels:
+        print("CHECKING:", channel)
+
         member = await bot.get_chat_member(chat_id=channel, user_id=user_id)
+
+        print("STATUS:", channel, member.status)
+
         if member.status not in ["member", "administrator", "creator"]:
             return False
+
     return True
 
 
