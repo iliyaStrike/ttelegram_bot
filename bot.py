@@ -69,15 +69,20 @@ async def start(message: Message):
 @dp.callback_query(F.data == "check")
 async def check(callback: CallbackQuery):
 
-    if await check_user(callback.from_user.id):
+    try:
+        user_id = callback.from_user.id
 
-        await callback.answer("✅ تایید شد", show_alert=True)
+        is_member = await check_user(user_id)
 
-        await callback.message.edit_text("✅ عضویت شما تایید شد")
+        if is_member:
+            await callback.answer("✅ تایید شد", show_alert=True)
+            await callback.message.edit_text("🎉 عضویت شما تایید شد")
+        else:
+            await callback.answer("❌ هنوز عضو کانال‌ها نیستی", show_alert=True)
 
-    else:
-
-        await callback.answer("❌ هنوز عضو نیستی", show_alert=True)
+    except Exception as e:
+        print("ERROR:", e)
+        await callback.answer("⚠️ خطا در بررسی عضویت", show_alert=True)
 
 # ======================
 # ADMIN - ADD FILE
